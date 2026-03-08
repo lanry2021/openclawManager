@@ -1,0 +1,34 @@
+{
+  "name": "openclaw-manager",
+  "version": "1.0.0",
+  "description": "OpenClaw Manager - 精美的 OpenClaw CLI 管理工具",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "npx electron .",
+    "dist": "npx electron-builder --win"
+  },
+  "author": "ulin.cc.cd",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^25.9.8",
+    "electron-builder": "^24.13.3",
+    "png-to-ico": "^3.0.1"
+  },
+  "build": {
+    "appId": "cc.ulin.openclaw-manager",
+    "productName": "OpenClaw Manager",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "installerIcon": "assets/icon.ico"
+    }
+  }
+}
