@@ -263,19 +263,19 @@ async function wizCheck() {
       document.getElementById('btn-uninstall-node-winget').style.display = 'none';
       logErr('Node.js 未安装');
       wiz.passed[0] = false;
-    } else if (ver !== 'v22.14.0') {
-      setEnvStatus('status-node', 'fail', `${ver} (版本不符)`);
-      document.getElementById('btn-install-node').style.display = 'inline-flex';
-      document.getElementById('btn-uninstall-node').style.display = 'inline-flex';
-      document.getElementById('btn-uninstall-node-winget').style.display = 'inline-flex';
-      logWarn(`Node.js 当前版本 ${ver}，需要 v22.14.0`);
-      wiz.passed[0] = false;
     } else {
-      setEnvStatus('status-node', 'ok', ver);
+      // 提取主版本号，低于 22 给警告但仍放行
+      const major = parseInt(ver.replace(/^v/, ''), 10);
+      if (major < 22) {
+        setEnvStatus('status-node', 'warn', `${ver} (版本较低)`);
+        logWarn(`Node.js ${ver} 版本较低，建议升级到 v22+`);
+      } else {
+        setEnvStatus('status-node', 'ok', ver);
+        logOk(`Node.js ${ver} ✓`);
+      }
       document.getElementById('btn-install-node').style.display = 'none';
       document.getElementById('btn-uninstall-node').style.display = 'inline-flex';
       document.getElementById('btn-uninstall-node-winget').style.display = 'inline-flex';
-      logOk(`Node.js ${ver} ✓`);
       wiz.passed[0] = true;
     }
 
@@ -392,10 +392,9 @@ document.getElementById('btn-wiz-recheck').onclick = () => wizCheck();
 // 安装 Node.js
 document.getElementById('btn-install-node').onclick = async () => {
   setEnvStatus('status-node', 'checking', '安装中...');
-  logInfo('正在通过 winget 安装 Node.js v22.14.0...');
+  logInfo('正在通过 winget 安装 Node.js...');
   const code = await runCmd('winget', [
     'install', '--id', 'OpenJS.NodeJS', '-e',
-    '--version', '22.14.0',
     '--accept-source-agreements', '--accept-package-agreements',
     '--silent'
   ]);

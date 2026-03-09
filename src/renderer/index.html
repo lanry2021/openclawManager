@@ -1,355 +1,559 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenClaw Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenClaw Manager</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-</head>
-
-<body>
-
-  <!-- 标题栏（无边框窗口拖动区） -->
-  <div class="titlebar" id="titlebar">
-    <div class="titlebar-logo">
-      <div class="logo-icon">🦾</div>
-      <span class="titlebar-title">OpenClaw Manager</span>
-    </div>
-    <div class="titlebar-controls">
-      <button class="ctrl-btn" id="btn-minimize" title="最小化">─</button>
-      <button class="ctrl-btn" id="btn-maximize" title="最大化">□</button>
-      <button class="ctrl-btn close-btn" id="btn-close" title="关闭">✕</button>
-    </div>
-  </div>
-
-  <!-- 服务协议弹窗 -->
-  <div class="overlay" id="overlay-agreement" style="display:none;">
-    <div class="modal agreement-modal">
-      <div class="modal-header">
-        <div class="modal-icon">📋</div>
-        <h2>用户服务协议</h2>
+  <body>
+    <!-- 标题栏（无边框窗口拖动区） -->
+    <div class="titlebar" id="titlebar">
+      <div class="titlebar-logo">
+        <div class="logo-icon">🦾</div>
+        <span class="titlebar-title">OpenClaw Manager</span>
       </div>
-      <div class="agreement-body">
-        <p class="agreement-date">版本：1.0 &nbsp;|&nbsp; 生效日期：2026年3月</p>
-        <div class="agreement-content">
-          <h3>一、软件性质与用途</h3>
-          <p>OpenClaw Manager（以下简称"本软件"）是一款面向技术用户的辅助工具，用于简化 OpenClaw CLI 工具的安装、配置与管理操作。本软件不提供任何托管服务、AI
-            服务或数据处理服务，仅作为技术操作界面。</p>
-
-          <h3>二、免责声明</h3>
-          <p><strong>本软件"按现状"提供，开发者不对以下情况承担任何责任：</strong></p>
-          <ul>
-            <li>因使用本软件执行的命令所导致的系统变更、数据丢失或安全问题；</li>
-            <li>OpenClaw 平台或第三方服务（Node.js、Git 等）的服务中断、政策变更或功能失效；</li>
-            <li>用户违反相关法律法规或第三方服务条款造成的一切法律责任；</li>
-            <li>因网络问题、系统环境差异导致的功能异常或授权失败；</li>
-            <li>间接损失、利润损失或业务中断造成的损失。</li>
-          </ul>
-
-          <h3>三、用户责任</h3>
-          <p>用户应自行承担使用本软件的全部风险，包括但不限于：正确理解并执行各命令的后果、遵守 OpenClaw 服务条款、确保使用行为符合当地法律法规。</p>
-
-          <h3>四、隐私说明</h3>
-          <p>本软件仅在授权验证时向服务器发送您的 MAC 地址用于身份绑定，不收集、传输或存储其他个人信息。配置数据仅保存于本机。</p>
-
-          <h3>五、协议变更</h3>
-          <p>开发者保留随时修改本协议的权利。重大变更时将在软件更新中通知用户。继续使用即视为接受更新后的协议。</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" id="btn-disagree">不同意，退出</button>
-        <button class="btn btn-primary" id="btn-agree">✓ 我已阅读并同意</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 授权验证弹窗 -->
-  <div class="overlay" id="overlay-auth" style="display:none;">
-    <div class="modal auth-modal">
-      <div class="modal-header">
-        <div class="modal-icon spin" id="auth-icon">⚡</div>
-        <h2 id="auth-title">授权验证中...</h2>
-      </div>
-      <div class="auth-body">
-        <div class="mac-display">
-          <span class="mac-label">当前机器 MAC</span>
-          <span class="mac-value" id="auth-mac">正在获取...</span>
-        </div>
-        <p class="auth-status" id="auth-status">正在连接授权服务器，请稍候...</p>
-        <div class="auth-loader" id="auth-loader">
-          <div class="loader-bar"></div>
-        </div>
-        <div class="auth-result" id="auth-result" style="display:none;"></div>
-      </div>
-      <div class="modal-footer" id="auth-footer" style="display:none;">
-        <button class="btn btn-ghost" id="btn-auth-retry">重试</button>
-        <button class="btn btn-primary" id="btn-auth-exit">退出程序</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 主布局 -->
-  <div class="main-layout" id="main-layout" style="display:none;">
-
-    <!-- 侧边栏 -->
-    <aside class="sidebar">
-      <div class="sidebar-nav">
-        <button class="nav-item active" data-page="setup" id="nav-setup">
-          <span class="nav-icon">⚙️</span>
-          <span>环境部署</span>
-        </button>
-        <button class="nav-item nav-locked" data-page="model" id="nav-model" disabled>
-          <span class="nav-icon">🤖</span>
-          <span>模型配置</span>
-          <span class="nav-lock-icon">🔒</span>
-        </button>
-        <button class="nav-item nav-locked" data-page="feishu" id="nav-feishu" disabled>
-          <span class="nav-icon">🪶</span>
-          <span>飞书集成</span>
-          <span class="nav-lock-icon">🔒</span>
+      <div class="titlebar-controls">
+        <button class="ctrl-btn" id="btn-minimize" title="最小化">─</button>
+        <button class="ctrl-btn" id="btn-maximize" title="最大化">□</button>
+        <button class="ctrl-btn close-btn" id="btn-close" title="关闭">
+          ✕
         </button>
       </div>
-      <div class="sidebar-footer">
-        <div class="sidebar-mac">
-          <span class="sidebar-mac-label">MAC</span>
-          <span class="sidebar-mac-val" id="sidebar-mac">-</span>
+    </div>
+
+    <!-- 服务协议弹窗 -->
+    <div class="overlay" id="overlay-agreement" style="display: none">
+      <div class="modal agreement-modal">
+        <div class="modal-header">
+          <div class="modal-icon">📋</div>
+          <h2>用户服务协议</h2>
         </div>
-      </div>
-    </aside>
+        <div class="agreement-body">
+          <p class="agreement-date">
+            版本：1.0 &nbsp;|&nbsp; 生效日期：2026年3月
+          </p>
+          <div class="agreement-content">
+            <h3>一、软件性质与用途</h3>
+            <p>
+              OpenClaw
+              Manager（以下简称"本软件"）是一款面向技术用户的辅助工具，用于简化
+              OpenClaw CLI
+              工具的安装、配置与管理操作。本软件不提供任何托管服务、AI
+              服务或数据处理服务，仅作为技术操作界面。
+            </p>
 
-    <!-- 内容区 -->
-    <main class="content">
+            <h3>二、免责声明</h3>
+            <p>
+              <strong
+                >本软件"按现状"提供，开发者不对以下情况承担任何责任：</strong
+              >
+            </p>
+            <ul>
+              <li>
+                因使用本软件执行的命令所导致的系统变更、数据丢失或安全问题；
+              </li>
+              <li>
+                OpenClaw 平台或第三方服务（Node.js、Git
+                等）的服务中断、政策变更或功能失效；
+              </li>
+              <li>用户违反相关法律法规或第三方服务条款造成的一切法律责任；</li>
+              <li>因网络问题、系统环境差异导致的功能异常或授权失败；</li>
+              <li>间接损失、利润损失或业务中断造成的损失。</li>
+            </ul>
 
-      <section class="page active" id="page-setup">
-        <div class="page-header">
-          <h1>环境部署</h1>
-          <p>按步骤安装运行依赖，完成后点击"下一步"</p>
-        </div>
+            <h3>三、用户责任</h3>
+            <p>
+              用户应自行承担使用本软件的全部风险，包括但不限于：正确理解并执行各命令的后果、遵守
+              OpenClaw 服务条款、确保使用行为符合当地法律法规。
+            </p>
 
-        <!-- 步骤指示器 -->
-        <div class="wiz-indicator">
-          <div class="wiz-dot-wrap" id="wiz-dot-1">
-            <div class="wiz-circle">1</div>
-            <div class="wiz-dot-label">Node.js</div>
-          </div>
-          <div class="wiz-connector" id="wiz-line-1"></div>
-          <div class="wiz-dot-wrap" id="wiz-dot-2">
-            <div class="wiz-circle">2</div>
-            <div class="wiz-dot-label">Git</div>
-          </div>
-          <div class="wiz-connector" id="wiz-line-2"></div>
-          <div class="wiz-dot-wrap" id="wiz-dot-3">
-            <div class="wiz-circle">3</div>
-            <div class="wiz-dot-label">OpenClaw</div>
-          </div>
-        </div>
+            <h3>四、隐私说明</h3>
+            <p>
+              本软件仅在授权验证时向服务器发送您的 MAC
+              地址用于身份绑定，不收集、传输或存储其他个人信息。配置数据仅保存于本机。
+            </p>
 
-        <!-- 步骤面板 1: Node.js -->
-        <div class="wiz-panel" id="wiz-panel-1">
-          <div class="env-card">
-            <div class="env-card-left">
-              <div class="env-icon node-icon">⬡</div>
-              <div class="env-info">
-                <div class="env-name">Node.js</div>
-                <div class="env-required">需要 v22.14.0</div>
-              </div>
-            </div>
-            <div class="env-card-right">
-              <span class="env-status checking" id="status-node">检测中...</span>
-              <button class="btn btn-sm btn-ghost" id="btn-install-node" style="display:none">安装</button>
-              <button class="btn btn-sm btn-danger-sm" id="btn-uninstall-node-winget" style="display:none" title="通过 winget 卸载">winget 卸载</button>
-              <button class="btn btn-sm btn-danger-sm" id="btn-uninstall-node" style="display:none" title="打开系统应用页卸载">🗑 应用页卸载</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 步骤面板 2: Git -->
-        <div class="wiz-panel" id="wiz-panel-2" style="display:none">
-          <div class="env-card">
-            <div class="env-card-left">
-              <div class="env-icon git-icon">⎇</div>
-              <div class="env-info">
-                <div class="env-name">Git</div>
-                <div class="env-required">任意版本</div>
-              </div>
-            </div>
-            <div class="env-card-right">
-              <span class="env-status checking" id="status-git">检测中...</span>
-              <button class="btn btn-sm btn-ghost" id="btn-install-git" style="display:none">安装</button>
-              <button class="btn btn-sm btn-danger-sm" id="btn-uninstall-git-winget" style="display:none" title="通过 winget 卸载">winget 卸载</button>
-              <button class="btn btn-sm btn-danger-sm" id="btn-uninstall-git" style="display:none" title="打开系统应用页卸载">🗑 应用页卸载</button>
-            </div>
+            <h3>五、协议变更</h3>
+            <p>
+              开发者保留随时修改本协议的权利。重大变更时将在软件更新中通知用户。继续使用即视为接受更新后的协议。
+            </p>
           </div>
         </div>
-
-        <!-- 步骤面板 3: OpenClaw -->
-        <div class="wiz-panel" id="wiz-panel-3" style="display:none">
-          <div class="env-card">
-            <div class="env-card-left">
-              <div class="env-icon claw-icon">🦴</div>
-              <div class="env-info">
-                <div class="env-name">OpenClaw CLI</div>
-                <div class="env-required">latest</div>
-              </div>
-            </div>
-            <div class="env-card-right">
-              <span class="env-status checking" id="status-openclaw">检测中...</span>
-              <button class="btn btn-sm btn-ghost" id="btn-install-openclaw" style="display:none">安装</button>
-              <button class="btn btn-sm btn-danger-sm" id="btn-uninstall-openclaw" style="display:none" title="卸载 OpenClaw">🗑 卸载</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 向导导航 -->
-        <div class="wiz-nav">
-          <button class="btn btn-ghost" id="btn-wiz-prev" style="visibility:hidden">← 上一步</button>
-          <button class="btn btn-ghost btn-sm" id="btn-wiz-recheck">🔍 重新检测</button>
-          <button class="btn btn-primary" id="btn-wiz-next" disabled>检测中...</button>
-        </div>
-
-      </section>
-
-
-      <!-- == 飞书集成页 == -->
-      <section class="page" id="page-feishu">
-        <div class="page-header feishu-page-header">
-          <div>
-            <h1>飞书集成</h1>
-            <p>按步骤安装飞书插件并配置频道</p>
-          </div>
-          <button class="btn btn-ghost feishu-portal-btn" id="btn-feishu-portal">
-            <span>🔗</span> 飞书开放平台
-            <span class="external-icon">↗</span>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" id="btn-disagree">不同意，退出</button>
+          <button class="btn btn-primary" id="btn-agree">
+            ✓ 我已阅读并同意
           </button>
         </div>
+      </div>
+    </div>
 
-        <!-- 安装流程（3步） -->
-        <div class="feishu-steps">
+    <!-- 授权验证弹窗 -->
+    <div class="overlay" id="overlay-auth" style="display: none">
+      <div class="modal auth-modal">
+        <div class="modal-header">
+          <div class="modal-icon spin" id="auth-icon">⚡</div>
+          <h2 id="auth-title">授权验证中...</h2>
+        </div>
+        <div class="auth-body">
+          <div class="mac-display">
+            <span class="mac-label">当前机器 MAC</span>
+            <span class="mac-value" id="auth-mac">正在获取...</span>
+          </div>
+          <p class="auth-status" id="auth-status">
+            正在连接授权服务器，请稍候...
+          </p>
+          <div class="auth-loader" id="auth-loader">
+            <div class="loader-bar"></div>
+          </div>
+          <div class="auth-result" id="auth-result" style="display: none"></div>
+        </div>
+        <div class="modal-footer" id="auth-footer" style="display: none">
+          <button class="btn btn-ghost" id="btn-auth-retry">重试</button>
+          <button class="btn btn-primary" id="btn-auth-exit">退出程序</button>
+        </div>
+      </div>
+    </div>
 
-          <div class="feishu-step">
-            <div class="step-num">1</div>
-            <div class="step-body">
-              <div class="step-title">清理旧数据</div>
-              <div class="step-desc">删除可能产生冲突的旧飞书插件文件夹</div>
-              <button class="btn btn-ghost btn-sm" id="btn-feishu-clean" style="margin-top:8px">🧹 清理旧数据</button>
+    <!-- 主布局 -->
+    <div class="main-layout" id="main-layout" style="display: none">
+      <!-- 侧边栏 -->
+      <aside class="sidebar">
+        <div class="sidebar-nav">
+          <button class="nav-item active" data-page="setup" id="nav-setup">
+            <span class="nav-icon">⚙️</span>
+            <span>环境部署</span>
+          </button>
+          <button
+            class="nav-item nav-locked"
+            data-page="model"
+            id="nav-model"
+            disabled
+          >
+            <span class="nav-icon">🤖</span>
+            <span>模型配置</span>
+            <span class="nav-lock-icon">🔒</span>
+          </button>
+          <button
+            class="nav-item nav-locked"
+            data-page="feishu"
+            id="nav-feishu"
+            disabled
+          >
+            <span class="nav-icon">🪶</span>
+            <span>飞书集成</span>
+            <span class="nav-lock-icon">🔒</span>
+          </button>
+        </div>
+        <div class="sidebar-footer">
+          <div class="sidebar-mac">
+            <span class="sidebar-mac-label">MAC</span>
+            <span class="sidebar-mac-val" id="sidebar-mac">-</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 内容区 -->
+      <main class="content">
+        <section class="page active" id="page-setup">
+          <div class="page-header">
+            <h1>环境部署</h1>
+            <p>按步骤安装运行依赖，完成后点击"下一步"</p>
+          </div>
+
+          <!-- 步骤指示器 -->
+          <div class="wiz-indicator">
+            <div class="wiz-dot-wrap" id="wiz-dot-1">
+              <div class="wiz-circle">1</div>
+              <div class="wiz-dot-label">Node.js</div>
+            </div>
+            <div class="wiz-connector" id="wiz-line-1"></div>
+            <div class="wiz-dot-wrap" id="wiz-dot-2">
+              <div class="wiz-circle">2</div>
+              <div class="wiz-dot-label">Git</div>
+            </div>
+            <div class="wiz-connector" id="wiz-line-2"></div>
+            <div class="wiz-dot-wrap" id="wiz-dot-3">
+              <div class="wiz-circle">3</div>
+              <div class="wiz-dot-label">OpenClaw</div>
             </div>
           </div>
 
-          <div class="feishu-step" id="feishu-step-2" style="display:none">
-            <div class="step-num">2</div>
-            <div class="step-body">
-              <div class="step-title">安装飞书插件</div>
-              <div class="step-desc"><code>openclaw plugins install @m1heng-clawd/feishu</code></div>
-              <button class="btn btn-primary btn-sm" id="btn-feishu-install" style="margin-top:8px">📦 安装飞书插件 <span class="terminal-tag" style="margin-left:6px">新窗口</span></button>
+          <!-- 步骤面板 1: Node.js -->
+          <div class="wiz-panel" id="wiz-panel-1">
+            <div class="env-card">
+              <div class="env-card-left">
+                <div class="env-icon node-icon">⬡</div>
+                <div class="env-info">
+                  <div class="env-name">Node.js</div>
+                  <div class="env-required">需要安装</div>
+                </div>
+              </div>
+              <div class="env-card-right">
+                <span class="env-status checking" id="status-node"
+                  >检测中...</span
+                >
+                <button
+                  class="btn btn-sm btn-ghost"
+                  id="btn-install-node"
+                  style="display: none"
+                >
+                  安装
+                </button>
+                <button
+                  class="btn btn-sm btn-danger-sm"
+                  id="btn-uninstall-node-winget"
+                  style="display: none"
+                  title="通过 winget 卸载"
+                >
+                  winget 卸载
+                </button>
+                <button
+                  class="btn btn-sm btn-danger-sm"
+                  id="btn-uninstall-node"
+                  style="display: none"
+                  title="打开系统应用页卸载"
+                >
+                  🗑 应用页卸载
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="feishu-step" id="feishu-step-3" style="display:none">
-            <div class="step-num">3</div>
-            <div class="step-body">
-              <div class="step-title">配置飞书频道</div>
-              <div class="step-desc">填入飞书应用凭证，一键写入 <code>openclaw.json</code></div>
-              <div class="feishu-channel-form">
-                <div class="feishu-form-row">
-                  <label class="feishu-form-label">App ID</label>
-                  <input class="input-field feishu-form-input" id="feishu-appid-input" type="text" placeholder="cli_xxxxxxxxxxxxxxxx" spellcheck="false" />
+          <!-- 步骤面板 2: Git -->
+          <div class="wiz-panel" id="wiz-panel-2" style="display: none">
+            <div class="env-card">
+              <div class="env-card-left">
+                <div class="env-icon git-icon">⎇</div>
+                <div class="env-info">
+                  <div class="env-name">Git</div>
+                  <div class="env-required">任意版本</div>
                 </div>
-                <div class="feishu-form-row">
-                  <label class="feishu-form-label">App Secret</label>
-                  <input class="input-field feishu-form-input" id="feishu-appsecret-input" type="password" placeholder="输入 App Secret" spellcheck="false" />
+              </div>
+              <div class="env-card-right">
+                <span class="env-status checking" id="status-git"
+                  >检测中...</span
+                >
+                <button
+                  class="btn btn-sm btn-ghost"
+                  id="btn-install-git"
+                  style="display: none"
+                >
+                  安装
+                </button>
+                <button
+                  class="btn btn-sm btn-danger-sm"
+                  id="btn-uninstall-git-winget"
+                  style="display: none"
+                  title="通过 winget 卸载"
+                >
+                  winget 卸载
+                </button>
+                <button
+                  class="btn btn-sm btn-danger-sm"
+                  id="btn-uninstall-git"
+                  style="display: none"
+                  title="打开系统应用页卸载"
+                >
+                  🗑 应用页卸载
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 步骤面板 3: OpenClaw -->
+          <div class="wiz-panel" id="wiz-panel-3" style="display: none">
+            <div class="env-card">
+              <div class="env-card-left">
+                <div class="env-icon claw-icon">🦴</div>
+                <div class="env-info">
+                  <div class="env-name">OpenClaw CLI</div>
+                  <div class="env-required">latest</div>
                 </div>
-                <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap">
-                  <button class="btn btn-primary btn-sm" id="btn-feishu-channel-apply">✅ 写入配置</button>
-                  <span class="feishu-channel-status" id="feishu-channel-status"></span>
+              </div>
+              <div class="env-card-right">
+                <span class="env-status checking" id="status-openclaw"
+                  >检测中...</span
+                >
+                <button
+                  class="btn btn-sm btn-ghost"
+                  id="btn-install-openclaw"
+                  style="display: none"
+                >
+                  安装
+                </button>
+                <button
+                  class="btn btn-sm btn-danger-sm"
+                  id="btn-uninstall-openclaw"
+                  style="display: none"
+                  title="卸载 OpenClaw"
+                >
+                  🗑 卸载
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 向导导航 -->
+          <div class="wiz-nav">
+            <button
+              class="btn btn-ghost"
+              id="btn-wiz-prev"
+              style="visibility: hidden"
+            >
+              ← 上一步
+            </button>
+            <button class="btn btn-ghost btn-sm" id="btn-wiz-recheck">
+              🔍 重新检测
+            </button>
+            <button class="btn btn-primary" id="btn-wiz-next" disabled>
+              检测中...
+            </button>
+          </div>
+        </section>
+
+        <!-- == 飞书集成页 == -->
+        <section class="page" id="page-feishu">
+          <div class="page-header feishu-page-header">
+            <div>
+              <h1>飞书集成</h1>
+              <p>按步骤安装飞书插件并配置频道</p>
+            </div>
+            <button
+              class="btn btn-ghost feishu-portal-btn"
+              id="btn-feishu-portal"
+            >
+              <span>🔗</span> 飞书开放平台
+              <span class="external-icon">↗</span>
+            </button>
+          </div>
+
+          <!-- 安装流程（3步） -->
+          <div class="feishu-steps">
+            <div class="feishu-step">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <div class="step-title">清理旧数据</div>
+                <div class="step-desc">删除可能产生冲突的旧飞书插件文件夹</div>
+                <button
+                  class="btn btn-ghost btn-sm"
+                  id="btn-feishu-clean"
+                  style="margin-top: 8px"
+                >
+                  🧹 清理旧数据
+                </button>
+              </div>
+            </div>
+
+            <div class="feishu-step" id="feishu-step-2" style="display: none">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <div class="step-title">安装飞书插件</div>
+                <div class="step-desc">
+                  <code>openclaw plugins install @m1heng-clawd/feishu</code>
+                </div>
+                <button
+                  class="btn btn-primary btn-sm"
+                  id="btn-feishu-install"
+                  style="margin-top: 8px"
+                >
+                  📦 安装飞书插件
+                  <span class="terminal-tag" style="margin-left: 6px"
+                    >新窗口</span
+                  >
+                </button>
+              </div>
+            </div>
+
+            <div class="feishu-step" id="feishu-step-3" style="display: none">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <div class="step-title">配置飞书频道</div>
+                <div class="step-desc">
+                  填入飞书应用凭证，一键写入 <code>openclaw.json</code>
+                </div>
+                <div class="feishu-channel-form">
+                  <div class="feishu-form-row">
+                    <label class="feishu-form-label">App ID</label>
+                    <input
+                      class="input-field feishu-form-input"
+                      id="feishu-appid-input"
+                      type="text"
+                      placeholder="cli_xxxxxxxxxxxxxxxx"
+                      spellcheck="false"
+                    />
+                  </div>
+                  <div class="feishu-form-row">
+                    <label class="feishu-form-label">App Secret</label>
+                    <input
+                      class="input-field feishu-form-input"
+                      id="feishu-appsecret-input"
+                      type="password"
+                      placeholder="输入 App Secret"
+                      spellcheck="false"
+                    />
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 12px;
+                      margin-top: 12px;
+                      flex-wrap: wrap;
+                    "
+                  >
+                    <button
+                      class="btn btn-primary btn-sm"
+                      id="btn-feishu-channel-apply"
+                    >
+                      ✅ 写入配置
+                    </button>
+                    <span
+                      class="feishu-channel-status"
+                      id="feishu-channel-status"
+                    ></span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
+          <!-- 配置完成后显示：重启网关 -->
+          <div
+            class="feishu-done-section"
+            id="feishu-done-section"
+            style="display: none"
+          >
+            <div class="feishu-done-tip">
+              ✅ 飞书配置已写入，重启网关使配置生效
+            </div>
+            <button class="btn btn-primary" id="btn-feishu-restart-gateway">
+              🌐 重启网关
+              <span class="terminal-tag" style="margin-left: 6px">新窗口</span>
+            </button>
+          </div>
+        </section>
 
-        <!-- 配置完成后显示：重启网关 -->
-        <div class="feishu-done-section" id="feishu-done-section" style="display:none">
-          <div class="feishu-done-tip">✅ 飞书配置已写入，重启网关使配置生效</div>
-          <button class="btn btn-primary" id="btn-feishu-restart-gateway">🌐 重启网关 <span class="terminal-tag" style="margin-left:6px">新窗口</span></button>
-        </div>
-      </section>
+        <!-- == 模型配置页 == -->
+        <section class="page" id="page-model">
+          <div class="page-header">
+            <h1>模型配置</h1>
+            <p>配置 OpenClaw 使用的 AI 模型与 API Key</p>
+          </div>
 
+          <!-- API Key 获取卡片 -->
+          <div class="model-card">
+            <div class="model-card-header">
+              <span class="model-card-icon">🔑</span>
+              <div>
+                <div class="model-card-title">自动获取 API Key</div>
+                <div class="model-card-desc">
+                  根据当前机器 MAC 地址从服务器获取分配的 API Key，并自动写入
+                  openclaw.json
+                </div>
+              </div>
+            </div>
+            <div class="model-apikey-row">
+              <div class="model-apikey-display" id="model-apikey-display">
+                —
+              </div>
+              <button class="btn btn-primary" id="btn-model-fetch-apikey">
+                ⚡ 获取并应用
+              </button>
+            </div>
+            <div class="model-status" id="model-fetch-status"></div>
 
-      <!-- == 模型配置页 == -->
-      <section class="page" id="page-model">
-        <div class="page-header">
-          <h1>模型配置</h1>
-          <p>配置 OpenClaw 使用的 AI 模型与 API Key</p>
-        </div>
-
-        <!-- API Key 获取卡片 -->
-        <div class="model-card">
-          <div class="model-card-header">
-            <span class="model-card-icon">🔑</span>
-            <div>
-              <div class="model-card-title">自动获取 API Key</div>
-              <div class="model-card-desc">根据当前机器 MAC 地址从服务器获取分配的 API Key，并自动写入 openclaw.json</div>
+            <!-- 成功后显示：自动启动网关 + 浏览器 -->
+            <div
+              class="model-restart-section"
+              id="model-restart-section"
+              style="display: none"
+            >
+              <div class="model-restart-tip" id="model-gateway-tip">
+                ⏳ 正在后台启动网关...
+              </div>
+              <div
+                class="model-restart-tip"
+                id="model-browser-tip"
+                style="display: none"
+              >
+                🌐 正在读取 Token 并打开浏览器...
+              </div>
+              <div
+                style="
+                  display: flex;
+                  gap: 10px;
+                  margin-top: 8px;
+                  flex-wrap: wrap;
+                "
+              >
+                <button
+                  class="btn btn-primary"
+                  id="btn-model-open-browser"
+                  style="display: none"
+                >
+                  🌐 重新打开网页
+                </button>
+                <button
+                  class="btn btn-ghost"
+                  id="btn-model-restart-gateway"
+                  style="display: none"
+                >
+                  ♻️ 重新静默启动网关
+                </button>
+              </div>
             </div>
           </div>
-          <div class="model-apikey-row">
-            <div class="model-apikey-display" id="model-apikey-display">—</div>
-            <button class="btn btn-primary" id="btn-model-fetch-apikey">⚡ 获取并应用</button>
+        </section>
+      </main>
+
+      <!-- 实时日志面板（右侧列） -->
+      <div class="log-panel" id="log-panel">
+        <div class="log-header" id="log-toggle">
+          <div class="log-header-left">
+            <span class="log-indicator" id="log-indicator"></span>
+            <span class="log-title">实时输出</span>
+            <span
+              class="log-running"
+              id="log-running-label"
+              style="display: none"
+              >运行中...</span
+            >
           </div>
-          <div class="model-status" id="model-fetch-status"></div>
-
-          <!-- 成功后显示：自动启动网关 + 浏览器 -->
-          <div class="model-restart-section" id="model-restart-section" style="display:none">
-            <div class="model-restart-tip" id="model-gateway-tip">⏳ 正在后台启动网关...</div>
-            <div class="model-restart-tip" id="model-browser-tip" style="display:none">🌐 正在读取 Token 并打开浏览器...</div>
-            <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-              <button class="btn btn-primary" id="btn-model-open-browser" style="display:none">🌐 重新打开网页</button>
-              <button class="btn btn-ghost" id="btn-model-restart-gateway" style="display:none">♻️ 重新静默启动网关</button>
-            </div>
+          <div class="log-header-right">
+            <button class="log-btn" id="btn-clear-log" title="清空日志">
+              🗑
+            </button>
+            <button class="log-btn" id="btn-toggle-log" title="展开/收起">
+              ◀
+            </button>
           </div>
         </div>
-      </section>
-
-
-
-    </main>
-
-    <!-- 实时日志面板（右侧列） -->
-    <div class="log-panel" id="log-panel">
-      <div class="log-header" id="log-toggle">
-        <div class="log-header-left">
-          <span class="log-indicator" id="log-indicator"></span>
-          <span class="log-title">实时输出</span>
-          <span class="log-running" id="log-running-label" style="display:none;">运行中...</span>
+        <div class="log-content" id="log-content">
+          <div class="log-empty">日志区域 — 执行命令后实时显示输出</div>
         </div>
-        <div class="log-header-right">
-          <button class="log-btn" id="btn-clear-log" title="清空日志">🗑</button>
-          <button class="log-btn" id="btn-toggle-log" title="展开/收起">◀</button>
-        </div>
-      </div>
-      <div class="log-content" id="log-content">
-        <div class="log-empty">日志区域 — 执行命令后实时显示输出</div>
       </div>
     </div>
 
-  </div>
-
-  <!-- 确认弹窗 -->
-  <div class="overlay" id="overlay-confirm" style="display:none;">
-    <div class="modal confirm-modal">
-      <div class="modal-icon">⚠️</div>
-      <p id="confirm-message"></p>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" id="btn-confirm-cancel">取消</button>
-        <button class="btn btn-danger" id="btn-confirm-ok">确认执行</button>
+    <!-- 确认弹窗 -->
+    <div class="overlay" id="overlay-confirm" style="display: none">
+      <div class="modal confirm-modal">
+        <div class="modal-icon">⚠️</div>
+        <p id="confirm-message"></p>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" id="btn-confirm-cancel">取消</button>
+          <button class="btn btn-danger" id="btn-confirm-ok">确认执行</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="app.js"></script>
-</body>
-
+    <script src="app.js"></script>
+  </body>
 </html>
