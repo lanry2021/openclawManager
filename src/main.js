@@ -3,8 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { getMacAddress } = require('./utils/macAddr');
-const { checkAuthorization, fetchApiKey } = require('./utils/api');
-const { refreshEnvPath, runCommand, checkNode, checkGit, checkOpenclaw } = require('./utils/sysCheck');
+const { refreshEnvPath, runCommand, checkNode, checkGit, checkOpenclaw, checkWinget, installWinget, installNodeFallback, installGitFallback, installOpenclawFallback, installVCRedistFallback } = require('./utils/sysCheck');
 
 // 配置文件路径（延迟获取，避免 app 未就绪时调用）
 function getConfigPath() {
@@ -80,21 +79,54 @@ ipcMain.handle('save-config', (_, data) => {
 // 获取 MAC 地址
 ipcMain.handle('get-mac', () => getMacAddress());
 
-// 授权检测
-ipcMain.handle('check-auth', async (_, mac) => {
-  try {
-    return await checkAuthorization(mac);
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-});
 
 // 环境检测
 ipcMain.handle('check-env', async () => {
   const [nodeVer, gitVer, openclawVer] = await Promise.all([
     checkNode(), checkGit(), checkOpenclaw()
   ]);
-  return { nodeVer, gitVer, openclawVer };
+  const hasWinget = checkWinget();
+  return { nodeVer, gitVer, openclawVer, hasWinget };
+});
+
+// Fallback 安装 winget（流式日志）
+ipcMain.handle('install-winget', async (event, taskId) => {
+  const code = await installWinget((line, type) => {
+    event.sender.send('command-output', { taskId, line, type });
+  });
+  return code;
+});
+
+// Fallback 安装 Node.js（流式日志）
+ipcMain.handle('install-node-fallback', async (event, taskId) => {
+  const code = await installNodeFallback((line, type) => {
+    event.sender.send('command-output', { taskId, line, type });
+  });
+  return code;
+});
+
+// Fallback 安装 Git（流式日志）
+ipcMain.handle('install-git-fallback', async (event, taskId) => {
+  const code = await installGitFallback((line, type) => {
+    event.sender.send('command-output', { taskId, line, type });
+  });
+  return code;
+});
+
+// Fallback 安装 OpenClaw（流式日志）
+ipcMain.handle('install-openclaw-fallback', async (event, taskId) => {
+  const code = await installOpenclawFallback((line, type) => {
+    event.sender.send('command-output', { taskId, line, type });
+  });
+  return code;
+});
+
+// Fallback 安装 VCRedist（流式日志）
+ipcMain.handle('install-vcredist-fallback', async (event, taskId) => {
+  const code = await installVCRedistFallback((line, type) => {
+    event.sender.send('command-output', { taskId, line, type });
+  });
+  return code;
 });
 
 // 执行命令（实时流式输出）
@@ -175,7 +207,6 @@ ipcMain.handle('run-in-terminal', async (_, cmd, args) => {
 
 // 检测并删除飞书扩展目录
 ipcMain.handle('remove-feishu-dir', async () => {
-  const path = require('path');
   const feishuDir = path.join(os.homedir(), '.openclaw', 'extensions', 'feishu');
   try {
     if (fs.existsSync(feishuDir)) {
@@ -185,6 +216,40 @@ ipcMain.handle('remove-feishu-dir', async () => {
     return { removed: false, path: feishuDir };
   } catch (e) {
     return { removed: false, error: e.message, path: feishuDir };
+  }
+});
+
+// 检测并删除整个 OpenClaw 隐藏配置/缓存目录
+ipcMain.handle('remove-openclaw-dir', async () => {
+  const rootDir = path.join(os.homedir(), '.openclaw');
+  try {
+    if (fs.existsSync(rootDir)) {
+      fs.rmSync(rootDir, { recursive: true, force: true });
+      return { removed: true, path: rootDir };
+    }
+    return { removed: false, path: rootDir };
+  } catch (e) {
+    return { removed: false, error: e.message, path: rootDir };
+  }
+});
+
+// 卸载自身
+ipcMain.handle('uninstall-app', async () => {
+  // electron-builder (NSIS) 默认在安装目录生成 Uninstall OpenClaw Help.exe
+  const exePath = app.getPath('exe');
+  const installDir = path.dirname(exePath);
+  const uninstallerPath = path.join(installDir, 'Uninstall OpenClaw Help.exe');
+
+  if (fs.existsSync(uninstallerPath)) {
+    require('child_process').spawn(uninstallerPath, [], {
+      detached: true,
+      stdio: 'ignore'
+    }).unref();
+    app.quit();
+    return { ok: true };
+  } else {
+    // 可能是开发环境，或者绿色版
+    return { ok: false, error: '未找到卸载程序：' + uninstallerPath };
   }
 });
 
@@ -207,58 +272,11 @@ ipcMain.handle('model-config-read', () => {
   }
 });
 
-// 从服务器获取 API Key（按 MAC 查询）
-ipcMain.handle('model-fetch-apikey', async (_, mac) => {
-  try {
-    const res = await fetchApiKey(mac);
-    return res;
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-});
-
-// 将 API Key 写入 openclaw.json（更新 models + agents.defaults.model/models 字段）
-ipcMain.handle('model-config-apply', (_, apiKey) => {
+// 保存 openclaw.json 的全部内容
+ipcMain.handle('model-config-write', (_, content) => {
   try {
     const p = getOpenclawConfigPath();
-    let cfg = {};
-    if (fs.existsSync(p)) {
-      try { cfg = JSON.parse(fs.readFileSync(p, 'utf8')); } catch {}
-    }
-
-    // 写入 models 配置
-    cfg.models = {
-      mode: 'merge',
-      providers: {
-        'custom-api-fansx-qzz-io': {
-          baseUrl: 'https://api.fansx.qzz.io/v1',
-          apiKey: apiKey,
-          api: 'openai-completions',
-          models: [
-            {
-              id: 'gemini-3-flash-preview',
-              name: 'gemini-3-flash-preview (Custom Provider)',
-              reasoning: false,
-              input: ['text'],
-              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-              contextWindow: 16000,
-              maxTokens: 4096,
-            },
-          ],
-        },
-      },
-    };
-
-    // 写入 agents.defaults.model + agents.defaults.models
-    if (!cfg.agents) cfg.agents = {};
-    if (!cfg.agents.defaults) cfg.agents.defaults = {};
-    cfg.agents.defaults.model = { primary: 'custom-api-fansx-qzz-io/gemini-3-flash-preview' };
-    cfg.agents.defaults.models = {
-      'anthropic/claude-opus-4-6': {},
-      'custom-api-fansx-qzz-io/gemini-3-flash-preview': { alias: 'gemini-3-flash-preview' },
-    };
-
-    fs.writeFileSync(p, JSON.stringify(cfg, null, 4), 'utf8');
+    fs.writeFileSync(p, content, 'utf8');
     return { ok: true, path: p };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -313,42 +331,7 @@ function deepMergeDefaults(target, src) {
   return target;
 }
 
-// ===================== 网关后台启动 =====================
-
-// 记录后台网关进程（避免重复启动）
-let gatewayProc = null;
-
-// 后台静默启动网关
-ipcMain.handle('gateway-start-bg', async () => {
-  await refreshEnvPath();
-  // 若已有进程在跑，先尝试 kill
-  if (gatewayProc) {
-    try { gatewayProc.kill(); } catch {}
-    gatewayProc = null;
-  }
-
-  const { spawn } = require('child_process');
-  const isWin = process.platform === 'win32';
-  let proc;
-  if (isWin) {
-    proc = spawn('cmd', ['/c', 'chcp 65001 > nul && openclaw gateway'], {
-      detached: true,
-      shell: false,
-      stdio: 'ignore',
-      env: { ...process.env },
-    });
-  } else {
-    proc = spawn('openclaw', ['gateway'], {
-      detached: true,
-      shell: false,
-      stdio: 'ignore',
-      env: { ...process.env },
-    });
-  }
-  proc.unref();
-  gatewayProc = proc;
-  return { ok: true, pid: proc.pid };
-});
+// ===================== 网关 =====================
 
 // 读取 openclaw.json 中的 gateway.auth.token
 ipcMain.handle('gateway-read-token', () => {
