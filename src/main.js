@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { getMacAddress } = require('./utils/macAddr');
-const { refreshEnvPath, runCommand, checkNode, checkGit, checkOpenclaw, checkWinget, installWinget, installNodeFallback, installGitFallback, installOpenclawFallback, installVCRedistFallback } = require('./utils/sysCheck');
+const { refreshEnvPath, runCommand, checkNode, checkGit, checkOpenclaw, checkWinget, checkVCRedist, installWinget, installNodeFallback, installGitFallback, installOpenclawFallback, installVCRedistFallback } = require('./utils/sysCheck');
 
 // 配置文件路径（延迟获取，避免 app 未就绪时调用）
 function getConfigPath() {
@@ -82,11 +82,11 @@ ipcMain.handle('get-mac', () => getMacAddress());
 
 // 环境检测
 ipcMain.handle('check-env', async () => {
-  const [nodeVer, gitVer, openclawVer] = await Promise.all([
-    checkNode(), checkGit(), checkOpenclaw()
+  const [nodeVer, gitVer, openclawVer, vcRedistVer] = await Promise.all([
+    checkNode(), checkGit(), checkOpenclaw(), checkVCRedist()
   ]);
   const hasWinget = checkWinget();
-  return { nodeVer, gitVer, openclawVer, hasWinget };
+  return { nodeVer, gitVer, openclawVer, vcRedistVer, hasWinget };
 });
 
 // Fallback 安装 winget（流式日志）

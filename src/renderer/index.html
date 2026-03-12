@@ -165,6 +165,7 @@
             <div style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 16px; margin-top: 10px;">
               <span id="badge-node" style="opacity: 0.5;">⬡ Node.js</span>
               <span id="badge-git" style="opacity: 0.5;">⎇ Git</span>
+              <span id="badge-vcredist" style="opacity: 0.5;">++ C++</span>
               <span id="badge-openclaw" style="opacity: 0.5;">🦴 OpenClaw</span>
             </div>
             <button class="btn btn-ghost btn-sm" id="btn-wiz-recheck" style="margin-top: 20px;">🔍 重新检测</button>
@@ -339,7 +340,7 @@
               <div class="step-body">
                 <div class="step-title">安装飞书插件</div>
                 <div class="step-desc">
-                  <code>openclaw plugins install @m1heng-clawd/feishu</code>
+                  <code>npm config set registry https://registry.npmmirror.com &amp;&amp; openclaw plugins install @m1heng-clawd/feishu</code>
                 </div>
                 <button
                   class="btn btn-primary btn-sm"

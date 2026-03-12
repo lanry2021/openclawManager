@@ -126,6 +126,7 @@ const envState = {
   nodeOk: false,
   gitOk: false,
   openclawOk: false,
+  vcRedistOk: false,
 };
 
 // 后台检测环境组件状态，自动切换视图
@@ -172,8 +173,18 @@ async function checkEnvStatus() {
     document.getElementById('badge-openclaw').style.opacity = '0.5';
   }
 
+  // VC Redist
+  const vcrv = result.vcRedistVer;
+  envState.vcRedistOk = !!vcrv;
+  if (vcrv) {
+    logOk(`C++ Redist ${vcrv} ✓`);
+    document.getElementById('badge-vcredist').style.opacity = '1';
+  } else {
+    document.getElementById('badge-vcredist').style.opacity = '0.5';
+  }
+
   // 视图切换
-  const allOk = envState.nodeOk && envState.gitOk && envState.openclawOk;
+  const allOk = envState.nodeOk && envState.gitOk && envState.openclawOk && envState.vcRedistOk;
   
   document.getElementById('env-view-unready').style.display = allOk ? 'none' : 'flex';
   document.getElementById('env-view-ready').style.display = allOk ? 'block' : 'none';
@@ -242,6 +253,11 @@ async function installNodeTask() {
   if (code === 0) {
     await api.refreshEnv();
     logOk('Node.js 安装完成');
+    
+    logInfo('正在初始化 npm 全局镜像源...');
+    await runCmd('npm', ['config', 'set', 'registry', 'https://registry.npmmirror.com']);
+    logOk('npm 镜像源已配置为淘宝镜像');
+    
     return true;
   }
   logErr('安装 Node.js 失败');
@@ -305,6 +321,14 @@ async function installOpenclawTask() {
     logOk('OpenClaw 安装完成');
     return true;
   }
+  
+  // 如果非0退出码，但检测到 OpenClaw 已安装成功，说明是可选依赖编译失败，不拦截部署进度
+  const envCheck = await api.checkEnv();
+  if (envCheck && envCheck.openclawVer) {
+    logWarn(`OpenClaw 核心程序已安装成功，但安装过程产生了警告或部分组件编译失败（退出码: ${code}）。一般不影响主功能使用。`);
+    return true;
+  }
+  
   logErr('安装 OpenClaw 失败');
   return false;
 }
@@ -454,8 +478,8 @@ document.getElementById('btn-feishu-clean').onclick = async () => {
 
 // 2. 安装飞书插件（新 CMD 窗口）→500ms 后展示步骤 3
 document.getElementById('btn-feishu-install').onclick = () => {
-  logInfo('在新 CMD 窗口中运行: openclaw plugins install @m1heng-clawd/feishu');
-  api.runInTerminal('openclaw', ['plugins', 'install', '@m1heng-clawd/feishu']);
+  logInfo('在新 CMD 窗口中运行: npm config set registry https://registry.npmmirror.com && openclaw plugins install @m1heng-clawd/feishu');
+  api.runInTerminal('cmd.exe', ['/c', 'npm config set registry https://registry.npmmirror.com && openclaw plugins install @m1heng-clawd/feishu']);
   setTimeout(() => {
     document.getElementById('feishu-step-3').style.display = 'flex';
     document.getElementById('feishu-step-3').scrollIntoView({ behavior: 'smooth' });

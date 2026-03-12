@@ -578,6 +578,23 @@ async function checkOpenclaw() {
 }
 
 /**
+ * 检测 VC Redist 是否安装
+ * @returns {Promise<string|null>} 版本号或 null
+ */
+async function checkVCRedist() {
+  return await new Promise((resolve) => {
+    const psCmd = `Get-Package -Name '*Microsoft Visual C++ 2015-20*Redistributable (x64)*' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Version -First 1`;
+    const proc = spawn("powershell", ["-NoProfile", "-Command", psCmd], { env: getEnv() });
+    let output = '';
+    proc.stdout.on("data", (b) => { output += b.toString(); });
+    proc.on("close", (code) => {
+      resolve(code === 0 && output.trim() ? output.trim().split('\n')[0].trim() : null);
+    });
+    proc.on("error", () => resolve(null));
+  });
+}
+
+/**
  * Fallback 安装 OpenClaw：优先检查本地内置 tarball 包，否则使用 npm 挂载 registry 安装最新版
  * @param {function} onOutput - 日志回调
  * @returns {Promise<number>} 0=成功, 非0=失败
@@ -653,12 +670,10 @@ async function installOpenclawFallback(onOutput) {
  * @returns {Promise<number>} 0=成功, 非0=失败, 2=已安装并跳过
  */
 async function installVCRedistFallback(onOutput) {
-  // 1. 检查注册表看是否已安装过 VC Redist 2015-2022 x64
+  // 1. 检查是否已安装过 VC Redist 2015-2022 x64
   onOutput(`🔍 正在检查系统是否已安装 VC 运行库...`, "info");
   const isInstalled = await new Promise((resolve) => {
-    // 检查注册表的卸载列表里是否存在
-    // 微软的 Guid 可能改变，保险起见用通配符匹配 DisplayName
-    const psCmd = `Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object {$_.DisplayName -match "Microsoft Visual C\\+\\+ 2015-2022 Redistributable \\(x64\\)"} | Select-Object -ExpandProperty DisplayVersion`;
+    const psCmd = `Get-Package -Name '*Microsoft Visual C++ 2015-20*Redistributable (x64)*' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Version -First 1`;
     const proc = spawn("powershell", ["-NoProfile", "-Command", psCmd], { env: getEnv() });
     let output = '';
     proc.stdout.on("data", (b) => { output += b.toString(); });
@@ -751,6 +766,7 @@ module.exports = {
   checkGit,
   checkOpenclaw,
   checkWinget,
+  checkVCRedist,
   installWinget,
   downloadFile,
   installNodeFallback,
