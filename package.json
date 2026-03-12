@@ -16,10 +16,19 @@
   },
   "build": {
     "appId": "cc.ulin.openclaw-manager",
-    "productName": "OpenClaw Manager",
+    "productName": "OpenClaw Help",
     "directories": {
       "output": "dist"
     },
+    "extraResources": [
+      {
+        "from": "installers",
+        "to": "installers",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
@@ -30,5 +39,8 @@
       "createDesktopShortcut": true,
       "installerIcon": "assets/icon.ico"
     }
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.59.0"
   }
 }

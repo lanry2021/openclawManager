@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OpenClaw Manager</title>
+    <title>OpenClaw Help</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
@@ -17,7 +17,7 @@
     <div class="titlebar" id="titlebar">
       <div class="titlebar-logo">
         <div class="logo-icon">🦾</div>
-        <span class="titlebar-title">OpenClaw Manager</span>
+        <span class="titlebar-title">OpenClaw Help</span>
       </div>
       <div class="titlebar-controls">
         <button class="ctrl-btn" id="btn-minimize" title="最小化">─</button>
@@ -76,8 +76,8 @@
 
             <h3>四、隐私说明</h3>
             <p>
-              本软件仅在授权验证时向服务器发送您的 MAC
-              地址用于身份绑定，不收集、传输或存储其他个人信息。配置数据仅保存于本机。
+              本软件不向服务器主动收集、传输或存储个人信息。除在使用模型服务时可能需要提供硬件
+              MAC 标识获取 API 密钥外，配置数据仅保存于本机。
             </p>
 
             <h3>五、协议变更</h3>
@@ -95,33 +95,6 @@
       </div>
     </div>
 
-    <!-- 授权验证弹窗 -->
-    <div class="overlay" id="overlay-auth" style="display: none">
-      <div class="modal auth-modal">
-        <div class="modal-header">
-          <div class="modal-icon spin" id="auth-icon">⚡</div>
-          <h2 id="auth-title">授权验证中...</h2>
-        </div>
-        <div class="auth-body">
-          <div class="mac-display">
-            <span class="mac-label">当前机器 MAC</span>
-            <span class="mac-value" id="auth-mac">正在获取...</span>
-          </div>
-          <p class="auth-status" id="auth-status">
-            正在连接授权服务器，请稍候...
-          </p>
-          <div class="auth-loader" id="auth-loader">
-            <div class="loader-bar"></div>
-          </div>
-          <div class="auth-result" id="auth-result" style="display: none"></div>
-        </div>
-        <div class="modal-footer" id="auth-footer" style="display: none">
-          <button class="btn btn-ghost" id="btn-auth-retry">重试</button>
-          <button class="btn btn-primary" id="btn-auth-exit">退出程序</button>
-        </div>
-      </div>
-    </div>
-
     <!-- 主布局 -->
     <div class="main-layout" id="main-layout" style="display: none">
       <!-- 侧边栏 -->
@@ -131,15 +104,17 @@
             <span class="nav-icon">⚙️</span>
             <span>环境部署</span>
           </button>
+          <button class="nav-item" data-page="cmd" id="nav-cmd">
+            <span class="nav-icon">⚡</span>
+            <span>快捷操作</span>
+          </button>
           <button
-            class="nav-item nav-locked"
-            data-page="model"
-            id="nav-model"
-            disabled
+            class="nav-item"
+            data-page="config"
+            id="nav-config"
           >
-            <span class="nav-icon">🤖</span>
-            <span>模型配置</span>
-            <span class="nav-lock-icon">🔒</span>
+            <span class="nav-icon">📝</span>
+            <span>配置文件</span>
           </button>
           <button
             class="nav-item nav-locked"
@@ -168,154 +143,125 @@
             <p>按步骤安装运行依赖，完成后点击"下一步"</p>
           </div>
 
-          <!-- 步骤指示器 -->
-          <div class="wiz-indicator">
-            <div class="wiz-dot-wrap" id="wiz-dot-1">
-              <div class="wiz-circle">1</div>
-              <div class="wiz-dot-label">Node.js</div>
+        <!-- 新版极简部署与控制面板 (Command Center) -->
+        <div id="env-dashboard">
+          
+          <!-- 视图 A：未完全安装时的「一键初始化」 -->
+          <div id="env-view-unready" class="env-card" style="display: none; flex-direction: column; align-items: center; padding: 40px 20px; gap: 20px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 10px;">📦</div>
+            <h2 style="margin: 0;">环境依赖未就绪</h2>
+            <p style="color: var(--text-secondary); margin: 0; max-width: 400px; font-size: 14px;">系统检测到您还未拉取完整的运行环境 (Node.js/Git/OpenClaw)。请点击下方按钮一键全自动部署。</p>
+            
+            <div id="deploy-progress-container" style="display: none; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px; width: 100%; max-width: 300px;">
+              <span id="deploy-progress-text" style="font-size: 13px; color: var(--text-secondary);">正在准备...</span>
+              <div class="auth-loader" style="width: 100%; height: 6px; border-radius: 3px;">
+                <div class="loader-bar"></div>
+              </div>
             </div>
-            <div class="wiz-connector" id="wiz-line-1"></div>
-            <div class="wiz-dot-wrap" id="wiz-dot-2">
-              <div class="wiz-circle">2</div>
-              <div class="wiz-dot-label">Git</div>
+
+            <button class="btn btn-primary" id="btn-deploy-all" style="padding: 12px 32px; font-size: 16px; margin-top: 10px;">
+              🚀 一键初始化引擎环境
+            </button>
+            <div style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 16px; margin-top: 10px;">
+              <span id="badge-node" style="opacity: 0.5;">⬡ Node.js</span>
+              <span id="badge-git" style="opacity: 0.5;">⎇ Git</span>
+              <span id="badge-vcredist" style="opacity: 0.5;">++ C++</span>
+              <span id="badge-openclaw" style="opacity: 0.5;">🦴 OpenClaw</span>
             </div>
-            <div class="wiz-connector" id="wiz-line-2"></div>
-            <div class="wiz-dot-wrap" id="wiz-dot-3">
-              <div class="wiz-circle">3</div>
-              <div class="wiz-dot-label">OpenClaw</div>
-            </div>
+            <button class="btn btn-ghost btn-sm" id="btn-wiz-recheck" style="margin-top: 20px;">🔍 重新检测</button>
           </div>
 
-          <!-- 步骤面板 1: Node.js -->
-          <div class="wiz-panel" id="wiz-panel-1">
-            <div class="env-card">
-              <div class="env-card-left">
-                <div class="env-icon node-icon">⬡</div>
-                <div class="env-info">
-                  <div class="env-name">Node.js</div>
-                  <div class="env-required">需要安装</div>
+          <!-- 视图 B：全就绪后的提示面板 -->
+          <div id="env-view-ready" class="env-card" style="display: none; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 24px;">✅</div>
+                <div>
+                  <h3 style="margin: 0; font-size: 16px;">引擎环境已就绪</h3>
+                  <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary);">基础环境已完成配置，请按顺序执行以下后续步骤。</p>
                 </div>
               </div>
-              <div class="env-card-right">
-                <span class="env-status checking" id="status-node"
-                  >检测中...</span
-                >
-                <button
-                  class="btn btn-sm btn-ghost"
-                  id="btn-install-node"
-                  style="display: none"
-                >
-                  安装
-                </button>
-                <button
-                  class="btn btn-sm btn-danger-sm"
-                  id="btn-uninstall-node-winget"
-                  style="display: none"
-                  title="通过 winget 卸载"
-                >
-                  winget 卸载
-                </button>
-                <button
-                  class="btn btn-sm btn-danger-sm"
-                  id="btn-uninstall-node"
-                  style="display: none"
-                  title="打开系统应用页卸载"
-                >
-                  🗑 应用页卸载
-                </button>
-              </div>
+              <button class="btn btn-ghost btn-sm" id="btn-wiz-recheck-2">🔍 重新检测</button>
             </div>
-          </div>
-
-          <!-- 步骤面板 2: Git -->
-          <div class="wiz-panel" id="wiz-panel-2" style="display: none">
-            <div class="env-card">
-              <div class="env-card-left">
-                <div class="env-icon git-icon">⎇</div>
-                <div class="env-info">
-                  <div class="env-name">Git</div>
-                  <div class="env-required">任意版本</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+              <!-- 步骤 1 -->
+              <button class="btn btn-ghost" id="btn-cmd-qwen" style="justify-content: flex-start; padding: 16px; height: auto; text-align: left; background: var(--bg-primary); border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
+                  <div>
+                    <div style="font-weight: 500; color: var(--primary); margin-bottom: 4px;">🚀 一键配置千问模型</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">自动唤起 Qwen OAuth 认证并配置默认大模型</div>
+                  </div>
                 </div>
-              </div>
-              <div class="env-card-right">
-                <span class="env-status checking" id="status-git"
-                  >检测中...</span
-                >
-                <button
-                  class="btn btn-sm btn-ghost"
-                  id="btn-install-git"
-                  style="display: none"
-                >
-                  安装
-                </button>
-                <button
-                  class="btn btn-sm btn-danger-sm"
-                  id="btn-uninstall-git-winget"
-                  style="display: none"
-                  title="通过 winget 卸载"
-                >
-                  winget 卸载
-                </button>
-                <button
-                  class="btn btn-sm btn-danger-sm"
-                  id="btn-uninstall-git"
-                  style="display: none"
-                  title="打开系统应用页卸载"
-                >
-                  🗑 应用页卸载
-                </button>
-              </div>
-            </div>
-          </div>
+              </button>
 
-          <!-- 步骤面板 3: OpenClaw -->
-          <div class="wiz-panel" id="wiz-panel-3" style="display: none">
-            <div class="env-card">
-              <div class="env-card-left">
-                <div class="env-icon claw-icon">🦴</div>
-                <div class="env-info">
-                  <div class="env-name">OpenClaw CLI</div>
-                  <div class="env-required">latest</div>
+              <!-- 步骤 2 -->
+              <button class="btn btn-ghost" id="btn-cmd-restart" style="justify-content: flex-start; padding: 16px; height: auto; text-align: left; background: var(--bg-primary); border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
+                  <div>
+                    <div style="font-weight: 500; color: var(--text); margin-bottom: 4px;">▶ 启动网关</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">执行 openclaw gateway (弹出控制台持续运行)</div>
+                  </div>
                 </div>
-              </div>
-              <div class="env-card-right">
-                <span class="env-status checking" id="status-openclaw"
-                  >检测中...</span
-                >
-                <button
-                  class="btn btn-sm btn-ghost"
-                  id="btn-install-openclaw"
-                  style="display: none"
-                >
-                  安装
-                </button>
-                <button
-                  class="btn btn-sm btn-danger-sm"
-                  id="btn-uninstall-openclaw"
-                  style="display: none"
-                  title="卸载 OpenClaw"
-                >
-                  🗑 卸载
-                </button>
-              </div>
+              </button>
             </div>
           </div>
 
-          <!-- 向导导航 -->
-          <div class="wiz-nav">
-            <button
-              class="btn btn-ghost"
-              id="btn-wiz-prev"
-              style="visibility: hidden"
-            >
-              ← 上一步
-            </button>
-            <button class="btn btn-ghost btn-sm" id="btn-wiz-recheck">
-              🔍 重新检测
-            </button>
-            <button class="btn btn-primary" id="btn-wiz-next" disabled>
-              检测中...
-            </button>
+        </div>
+        </section>
+
+        <!-- == 快捷操作页 == -->
+        <section class="page" id="page-cmd">
+          <div class="page-header">
+            <h1>快捷操作</h1>
+            <p>常用命令的快速执行入口与后台控制</p>
+          </div>
+          <div class="env-card" style="padding: 24px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <button class="btn btn-ghost" id="btn-cmd-install-global" style="justify-content: flex-start; padding: 16px; height: auto;">
+                <div style="text-align: left;">
+                  <div style="font-weight: 500; color: var(--primary); margin-bottom: 4px;">📥 全局强制安装最新版</div>
+                  <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">执行 npm install -g openclaw@latest (可用于修复环境丢失)</div>
+                </div>
+              </button>
+
+              <button class="btn btn-ghost" id="btn-cmd-setup" style="justify-content: flex-start; padding: 16px; height: auto;">
+                <div style="text-align: left;">
+                  <div style="font-weight: 500; color: var(--text); margin-bottom: 4px;">⚙️ 初始化环境配置</div>
+                  <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">执行 openclaw setup (一键导向默认配置)</div>
+                </div>
+              </button>
+              
+              <button class="btn btn-ghost" id="btn-cmd-config" style="justify-content: flex-start; padding: 16px; height: auto;">
+                <div style="text-align: left;">
+                  <div style="font-weight: 500; color: var(--text); margin-bottom: 4px;">📝 编辑当前配置</div>
+                  <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">执行 openclaw config (查看和管理账号参数)</div>
+                </div>
+              </button>
+              
+              <button class="btn btn-ghost" id="btn-cmd-reload" style="justify-content: flex-start; padding: 16px; height: auto;">
+                <div style="text-align: left;">
+                  <div style="font-weight: 500; color: var(--text); margin-bottom: 4px;">♻️ 重启网关服务</div>
+                  <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">执行 openclaw gateway restart (应用新的设置并重载服务)</div>
+                </div>
+              </button>
+
+              <button class="btn btn-ghost" id="btn-cmd-uninstall" style="justify-content: flex-start; padding: 16px; height: auto;">
+                <div style="text-align: left;">
+                  <div style="font-weight: 500; color: #f85149; margin-bottom: 4px;">🗑️ 卸载 OpenClaw</div>
+                  <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">从本机全局移除已安装的核心环境</div>
+                </div>
+              </button>
+              
+              <button class="btn btn-ghost" id="btn-cmd-uninstall-app" style="justify-content: flex-start; padding: 16px; height: auto;">
+                <div style="text-align: left;">
+                  <div style="font-weight: 500; color: #f85149; margin-bottom: 4px;">🔌 卸载界面程序</div>
+                  <div style="font-size: 12px; color: var(--text-secondary); white-space: normal;">运行卸载程序以移除 OpenClaw Help 本身</div>
+                </div>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -333,6 +279,43 @@
               <span>🔗</span> 飞书开放平台
               <span class="external-icon">↗</span>
             </button>
+          </div>
+
+          <!-- 前置准备：权限与事件 -->
+          <div class="feishu-steps" style="margin-bottom: 24px;">
+            <div class="feishu-step">
+              <div class="step-num" style="background: rgba(88, 166, 255, 0.15); color: #58a6ff; border: 1px solid rgba(88, 166, 255, 0.3);">ℹ️</div>
+              <div class="step-body">
+                <div class="step-title" style="color: #58a6ff;">前置准备：在开放平台配置机器人</div>
+                <div class="step-desc">进入飞书开放平台您的应用后台，完成以下两项信息的配置：</div>
+                
+                <!-- 权限范围卡片 -->
+                <div style="background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-top: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 500; color: #c9d1d9;">1. 权限管理 -> 批量开通权限 (导入 JSON)</span>
+                    <button class="btn btn-ghost btn-sm" id="btn-copy-feishu-scopes" style="padding: 2px 8px; font-size: 12px;">📋 复制配置</button>
+                  </div>
+                  <textarea id="feishu-scopes-json" readonly style="width: 100%; height: 120px; background: #010409; color: #8b949e; border: 1px solid #30363d; border-radius: 4px; padding: 8px; font-family: Consolas, monospace; font-size: 12px; resize: none; outline: none;">{
+  "scopes": {
+    "tenant": [
+      "aily:file:read", "aily:file:write", "application:application.app_message_stats.overview:readonly", "application:application:self_manage", "application:bot.menu:write", "cardkit:card:write", "contact:user.employee_id:readonly", "corehr:file:download", "docs:document.content:read", "event:ip_list", "im:chat", "im:chat.access_event.bot_p2p_chat:read", "im:chat.members:bot_access", "im:message", "im:message.group_at_msg:readonly", "im:message.group_msg", "im:message.p2p_msg:readonly", "im:message:readonly", "im:message:send_as_bot", "im:resource", "sheets:spreadsheet", "wiki:wiki:readonly"
+    ],
+    "user": ["aily:file:read", "aily:file:write", "im:chat.access_event.bot_p2p_chat:read"]
+  }
+}</textarea>
+                </div>
+
+                <!-- 事件订阅卡片 -->
+                <div style="background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-top: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; font-weight: 500; color: #c9d1d9;">2. 事件与回调 -> 添加事件订阅</span>
+                    <button class="btn btn-ghost btn-sm" id="btn-copy-feishu-event" style="padding: 2px 8px; font-size: 12px;">📋 复制名称</button>
+                  </div>
+                  <div style="font-family: Consolas, monospace; font-size: 12px; color: #58a6ff; margin-top: 8px; background: #010409; padding: 6px 10px; border-radius: 4px; border: 1px solid #30363d;" id="feishu-event-name">im.message.receive_v1</div>
+                </div>
+
+              </div>
+            </div>
           </div>
 
           <!-- 安装流程（3步） -->
@@ -357,7 +340,7 @@
               <div class="step-body">
                 <div class="step-title">安装飞书插件</div>
                 <div class="step-desc">
-                  <code>openclaw plugins install @m1heng-clawd/feishu</code>
+                  <code>npm config set registry https://registry.npmmirror.com &amp;&amp; openclaw plugins install @m1heng-clawd/feishu</code>
                 </div>
                 <button
                   class="btn btn-primary btn-sm"
@@ -441,76 +424,27 @@
           </div>
         </section>
 
-        <!-- == 模型配置页 == -->
-        <section class="page" id="page-model">
+        <!-- == 配置文件页 == -->
+        <section class="page" id="page-config">
           <div class="page-header">
-            <h1>模型配置</h1>
-            <p>配置 OpenClaw 使用的 AI 模型与 API Key</p>
-          </div>
-
-          <!-- API Key 获取卡片 -->
-          <div class="model-card">
-            <div class="model-card-header">
-              <span class="model-card-icon">🔑</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
               <div>
-                <div class="model-card-title">自动获取 API Key</div>
-                <div class="model-card-desc">
-                  根据当前机器 MAC 地址从服务器获取分配的 API Key，并自动写入
-                  openclaw.json
+                <h1>配置文件</h1>
+                <p>实时查看和编辑本地 openclaw.json 配置</p>
+                <div id="config-gateway-link-area" style="margin-top: 12px; display: none; align-items: center; gap: 8px; font-size: 13px; background: rgba(74, 175, 23, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(74, 175, 23, 0.2);">
+                  <span>🔗 网关直达：</span>
+                  <a href="#" id="config-gateway-url" style="color: #58a6ff; text-decoration: none; word-break: break-all; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></a>
+                  <button class="btn btn-primary btn-sm" id="btn-config-open-web" style="padding: 4px 10px; font-size: 12px;">🌐 浏览器打开</button>
                 </div>
               </div>
-            </div>
-            <div class="model-apikey-row">
-              <div class="model-apikey-display" id="model-apikey-display">
-                —
-              </div>
-              <button class="btn btn-primary" id="btn-model-fetch-apikey">
-                ⚡ 获取并应用
-              </button>
-            </div>
-            <div class="model-status" id="model-fetch-status"></div>
-
-            <!-- 成功后显示：自动启动网关 + 浏览器 -->
-            <div
-              class="model-restart-section"
-              id="model-restart-section"
-              style="display: none"
-            >
-              <div class="model-restart-tip" id="model-gateway-tip">
-                ⏳ 正在后台启动网关...
-              </div>
-              <div
-                class="model-restart-tip"
-                id="model-browser-tip"
-                style="display: none"
-              >
-                🌐 正在读取 Token 并打开浏览器...
-              </div>
-              <div
-                style="
-                  display: flex;
-                  gap: 10px;
-                  margin-top: 8px;
-                  flex-wrap: wrap;
-                "
-              >
-                <button
-                  class="btn btn-primary"
-                  id="btn-model-open-browser"
-                  style="display: none"
-                >
-                  🌐 重新打开网页
-                </button>
-                <button
-                  class="btn btn-ghost"
-                  id="btn-model-restart-gateway"
-                  style="display: none"
-                >
-                  ♻️ 重新静默启动网关
-                </button>
-              </div>
+              <button class="btn btn-primary btn-sm" id="btn-config-save">💾 保存修改</button>
             </div>
           </div>
+
+          <div class="env-card" style="padding: 0; display: flex; flex-direction: column; flex: 1; min-height: 480px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
+            <textarea id="config-editor" spellcheck="false" style="flex: 1; width: 100%; height: 100%; min-height: 480px; padding: 16px; background: #0d1117; color: #c9d1d9; font-family: Consolas, monospace; font-size: 13px; border: none; resize: vertical; outline: none;"></textarea>
+          </div>
+          <div id="config-save-status" style="margin-top: 8px; font-size: 12px; height: 16px;"></div>
         </section>
       </main>
 
